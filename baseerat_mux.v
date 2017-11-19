@@ -32,12 +32,11 @@ module baseerat_mux
 //------------------------------------------------------------------------------
 // Parameters
 //------------------------------------------------------------------------------
-parameter DATA_WIDTH = 16; //Works with multiple of 16
-parameter REG_OUT = 0;
+parameter DATA_WIDTH = 32; //Works with multiple of 16
+parameter REG_OUT = 1;
 
-
-localparam  DATA_WIDTH_INT = (DATA_WIDTH < 16) ? DATA_WIDTH
-                                               : DATA_WIDTH/16;
+localparam  SECTION_WIDTH = 16;
+localparam  SECTIONS = DATA_WIDTH/SECTION_WIDTH;
 
 // -----------------------------------------------------------------------------
 // Signal definitions
@@ -62,33 +61,34 @@ localparam  DATA_WIDTH_INT = (DATA_WIDTH < 16) ? DATA_WIDTH
   //----------------------------------------------------------------------------
   // Internal Signals
   //----------------------------------------------------------------------------
-  wire [DATA_WIDTH-1:0] dout_nxt;
-  wire [DATA_WIDTH-1:0] dout_reg;
-  // -----------------------------------------------------------------------------
+  
+  // ---------------------------------------------------------------------------
   // Main code
-  // -----------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
     generate
       genvar  g;
 
-      for (g = 0; g < DATA_WIDTH_INT; g = g + 1)
+      for (g = 0; g < SECTIONS; g = g + 1)
       begin : g_mux
-          wire [DATA_WIDTH_INT-1:0] d_nxt;
-          reg  [DATA_WIDTH_INT-1:0] d_reg;
+          wire [SECTION_WIDTH-1:0] d_nxt;
 
-          assign d_nxt = sel   ? din0[(g*DATA_WIDTH_INT) +: DATA_WIDTH_INT]
-                               : din1[(g*DATA_WIDTH_INT) +: DATA_WIDTH_INT];
+          assign d_nxt = sel   ? din0[(g*SECTION_WIDTH) +: SECTION_WIDTH]
+                               : din1[(g*SECTION_WIDTH) +: SECTION_WIDTH];
 
          if(REG_OUT == 1)
          begin : g_reg_out
+         
+           reg  [SECTION_WIDTH-1:0] d_reg;
            always @(posedge clk)
            begin : p_dout_reg
                d_reg <= d_nxt;
            end
-           dout[(g*DATA_WIDTH_INT) +: DATA_WIDTH_INT] = d_reg;
+           assign dout[(g*SECTION_WIDTH) +: SECTION_WIDTH] = d_reg;
+           
          end
          else
          begin: g_comb_out
-           assign dout[(g*DATA_WIDTH_INT) +: DATA_WIDTH_INT] = d_nxt;
+           assign dout[(g*SECTION_WIDTH) +: SECTION_WIDTH] = d_nxt;
          end
 
       end
