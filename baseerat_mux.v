@@ -32,7 +32,7 @@ module baseerat_mux
 //------------------------------------------------------------------------------
 // Parameters
 //------------------------------------------------------------------------------
-parameter DATA_WIDTH = 32; //Works with multiple of 16
+parameter DATA_WIDTH = 160; //Works with multiple of 16
 parameter REG_OUT = 1;
 
 localparam  SECTION_WIDTH = 16;
