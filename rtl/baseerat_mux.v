@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
-// Name : baseerat_mux_wrapper.v
-// Purpose : baseerat_mux wrapper
+// Name : baseerat_mux.v
+// Purpose : General Purpose Mux
 //
 // -----------------------------------------------------------------------------
 // Note    : This file uses Verilog-2001.
@@ -9,12 +9,12 @@
 // -----------------------------------------------------------------------------
 // Module declaration
 // -----------------------------------------------------------------------------
-module baseerat_mux_wrapper
+module baseerat_mux
 (
   //----------------------------------------------------------------------------
   // Clock, Clock Enables and Reset.
   //----------------------------------------------------------------------------
-  clk,
+  clock,
   resetn,
 
   //----------------------------------------------------------------------------
@@ -26,14 +26,17 @@ module baseerat_mux_wrapper
 
   dout
 
-); // baseerat_mux_wrapper
+); // baseerat_mux
 
 
 //------------------------------------------------------------------------------
 // Parameters
 //------------------------------------------------------------------------------
-parameter DATA_WIDTH = 16; //Works with multiple of 16
-parameter REG_OUT = 0;
+parameter DATA_WIDTH = 256; //Works with multiple of 16
+parameter REG_OUT = 1;
+
+localparam  SECTION_WIDTH = 16;
+localparam  SECTIONS = DATA_WIDTH/SECTION_WIDTH;
 
 // -----------------------------------------------------------------------------
 // Signal definitions
@@ -42,7 +45,7 @@ parameter REG_OUT = 0;
   //----------------------------------------------------------------------------
   // Clock, Clock Enable and Reset
   //----------------------------------------------------------------------------
-  input   wire                          clk;
+  input   wire                          clock;
   input   wire                          resetn;
 
   //----------------------------------------------------------------------------
@@ -62,20 +65,36 @@ parameter REG_OUT = 0;
   // ---------------------------------------------------------------------------
   // Main code
   // ---------------------------------------------------------------------------
-  baseerat_mux_wrapper #(
-      .DATA_WIDTH (DATA_WIDTH),
-      .REG_OUT    (REG_OUT)
-    )
-    u_baseerat_mux(
-    .clk        (clk),
-    .resetn     (resetn),
-    .din0       (din0),
-    .din1       (din1),
-    .sel        (sel),
-    .dout       (dout)
-  );
+  generate
+    genvar  g;
 
-endmodule // baseerat_mux_wrapper
+    for (g = 0; g < SECTIONS; g = g + 1)
+    begin : g_mux
+        wire [SECTION_WIDTH-1:0] d_nxt;
+
+        assign d_nxt = sel   ? din0[(g*SECTION_WIDTH) +: SECTION_WIDTH]
+                             : din1[(g*SECTION_WIDTH) +: SECTION_WIDTH];
+
+       if(REG_OUT == 1)
+       begin : g_reg_out
+
+         reg  [SECTION_WIDTH-1:0] d_reg;
+         always @(posedge clock)
+         begin : p_dout_reg
+             d_reg <= d_nxt;
+         end
+         assign dout[(g*SECTION_WIDTH) +: SECTION_WIDTH] = d_reg;
+
+       end
+       else
+       begin: g_comb_out
+         assign dout[(g*SECTION_WIDTH) +: SECTION_WIDTH] = d_nxt;
+       end
+
+    end
+  endgenerate
+
+endmodule // baseerat_mux
 
 // -----------------------------------------------------------------------------
 // End of File
